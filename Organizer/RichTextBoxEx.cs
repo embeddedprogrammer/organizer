@@ -10,6 +10,22 @@ namespace Organizer
 {
 	public partial class RichTextBoxEx : RichTextBox
 	{
+		public interface IMouseable
+		{
+			void doMouseWheel(MouseEventArgs e);
+		}
+
+		protected override void OnMouseWheel(MouseEventArgs e)
+		{
+			//base.OnMouseWheel(e);
+
+			//cast the parent to IMouseable and call its doMouseWheel mothod.
+			if (Parent is IMouseable)
+			{
+				((IMouseable)(Parent)).doMouseWheel(e);
+			}
+		}
+
 		#region Interop-Defines
 		[StructLayout(LayoutKind.Sequential)]
 		public struct CHARFORMAT2_STRUCT
@@ -176,6 +192,14 @@ namespace Organizer
 			// Otherwise, non-standard links get lost when user starts typing
 			// next to a non-standard link
 			this.DetectUrls = false;
+			ContentsResized += new ContentsResizedEventHandler(RichTextBoxEx_ContentsResized);
+		}
+
+		public Rectangle SizeOfContents;
+
+		void RichTextBoxEx_ContentsResized(object sender, ContentsResizedEventArgs e)
+		{
+			SizeOfContents = e.NewRectangle;
 		}
 
 		[DefaultValue(false)]
@@ -442,7 +466,8 @@ namespace Organizer
 			{
 				CHARFORMAT2_STRUCT fmt = GetNewFormatStruct();
 				fmt.dwEffects = value ? CFE_UNDERLINE : 0;
-				fmt.dwMask = CFM_UNDERLINE;
+				fmt.bAnimation = 0;
+				fmt.dwMask = CFM_UNDERLINE | CFM_ANIMATION;
 				SetSelectionCharFormat(fmt);
 				//SelectedRtf = FontParser.SetProperty(SelectedRtf, "ul", value);
 			}
@@ -1322,12 +1347,12 @@ namespace Organizer
 
 		private void RefreshClippedRtf()
 		{
-			Form1.StartTimer();
+			//Form1.StartTimer();
 			clipStartIndex = getCornerIndex();
 			clipEndIndex = GetCharIndexFromPosition(new Point(Width, Height - 4)) + 1;
 			clippedRtf = GetClippedRtf(clipStartIndex, clipEndIndex);
 			scroll = false;
-			Form1.ShowTime("Time to clip rtf");
+			//Form1.ShowTime("Time to clip rtf");
 		}
 
 		private void RichTextBoxEx_KeyDown(object sender, KeyEventArgs e)

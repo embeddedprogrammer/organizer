@@ -17,6 +17,7 @@ namespace Organizer
 		}
 		public ItemType lastItemType = ItemType.NotYetAssigned;
 		public ItemType itemType = ItemType.NotYetAssigned;
+		public bool treatSemicolonAsDelimiter = true;
 		public enum ItemType { NotYetAssigned, LeftBrace, RightBrace, Tag,
 		NewlineCharacter, EscapeSequence, HexCharacter, TagStop, Text, Delimiter}
 
@@ -228,9 +229,16 @@ namespace Organizer
 					itemLength = 1;
 					break;
 				case ';':
-					itemType = ItemType.Delimiter;
-					itemLength = 1;
-					break;
+					if (treatSemicolonAsDelimiter)
+					{
+						itemType = ItemType.Delimiter;
+						itemLength = 1;
+						break;
+					}
+					else
+					{
+						goto default; // Fall throughs aren't allowed in C#
+					}
 				case '\r':
 					if (GetItemChar(1) == '\n')
 					{

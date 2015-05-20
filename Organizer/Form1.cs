@@ -110,7 +110,7 @@ namespace Organizer
 			while (recentFilePaths.Count > recentFileMenuItems.Count)
 			{
 				ToolStripMenuItem recentFileMenuItem = new ToolStripMenuItem();
-				fileToolStripMenuItem.DropDownItems.Add(recentFileMenuItem);
+				fileToolStripMenuItem.DropDownItems.Insert(fileToolStripMenuItem.DropDownItems.Count - 2, recentFileMenuItem);
 				recentFileMenuItems.Add(recentFileMenuItem);
 				recentFileMenuItem.Click += new EventHandler(recentFileMenuItem_Click);
 			}
@@ -414,86 +414,17 @@ namespace Organizer
 			treeObject = GetTreeObject(lastSelectedNode);
 			if (treeObject != null)
 			{
-				storeText(richTextBoxEx1, treeObject);
-			}
-			else
-			{
-				setDebugValue("Error saving text", "Error saving text.");
+				scrollablePanel1.storeText(treeObject);
 			}
 		}
 
 		public void loadTreeObject()
 		{
 			treeObject = GetTreeObject(lastSelectedNode);
-			setDebugValue("Loaded Node", lastSelectedNode.Text);
 			if (treeObject != null)
 			{
-				loadText(richTextBoxEx1, treeObject);
+				scrollablePanel1.loadText(treeObject);
 			}
-			else
-			{
-				richTextBoxEx1.Text = "Error loading text.";
-			}
-		}
-
-		public void storeText(RichTextBoxEx richTextBox, TreeObject treeObject)
-		{
-			bool containsRtf = richTextBox.ContainsRtf(preferredFont, preferredFontColor);
-			if (containsRtf != treeObject.StoredAsRTF && ! treeObject.StoredSeparate)
-			{
-				currentFileSaved = false;
-				treeObject.StoredAsRTF = containsRtf;
-			}
-			if (treeObject.StoredAsRTF)
-			{
-				if (treeObject.Rtf != richTextBox.Rtf)
-				{
-					currentFileSaved = false;
-					treeObject.Saved = false;
-				}
-				treeObject.Rtf = richTextBox.Rtf;
-			}
-			else
-			{
-				if (treeObject.Text != richTextBox.Text)
-				{
-					currentFileSaved = false;
-					treeObject.Saved = false;
-				}
-			}
-			treeObject.Text = richTextBox.Text; //Always need to store text for version compatibility.
-			treeObject.SelectionStart = richTextBox.getCornerIndex();
-		}
-
-		public void loadText(RichTextBoxEx richTextBox, TreeObject treeObject)
-		{
-			richTextBox.SuspendDrawing();
-			if (treeObject.StoredSeparate && treeObject.Rtf == null)
-			{
-				ReadTreeObjectRtf(treeObject);
-			}
-			if (treeObject.StoredAsRTF && treeObject.Rtf != null)
-			{
-				richTextBox.Rtf = treeObject.Rtf;
-			}
-			else
-			{
-				richTextBox.Text = treeObject.Text;
-				richTextBox.SelectAll();
-				richTextBox.SelectionFont = preferredFont;
-				richTextBox.SelectionColor = preferredFontColor;
-			}
-			try
-			{
-				richTextBox.Select(treeObject.SelectionStart, 0);
-				richTextBox.ScrollToCaret();
-			}
-			catch(Exception ex)
-			{
-				//Some sort of asyncronous exception happens here if this has been called inside a RTB event handler.
-				//We'll just ignore it for now.
-			}
-			richTextBox.ResumeDrawing();
 		}
 
 		public static TreeObject GetTreeObject(TreeNode node)
@@ -640,6 +571,21 @@ namespace Organizer
 			return editableTreeView1.getNodeAtIndex(0);
 		}
 
+		public bool nodesContainMultipleEntries(TreeNodeCollection nodes)
+		{
+			foreach (TreeNode node in nodes)
+			{
+				if (nodeContainMultipleEntries(node))
+					return true;
+			}
+			return false;
+		}
+
+		public bool nodeContainMultipleEntries(TreeNode node)
+		{
+			return GetTreeObject(node).entries.Count > 1 || nodesContainMultipleEntries(node.Nodes);
+		}
+
 		public bool nodesStoredSeparatelyOrHaveId(TreeNodeCollection nodes)
 		{
 			if (TreeObject.idUsed)
@@ -654,7 +600,7 @@ namespace Organizer
 
 		public bool nodeStoredSeparately(TreeNode node)
 		{
-			return GetTreeObject(node).StoredSeparate || nodesContainRTF(node.Nodes);
+			return GetTreeObject(node).StoredSeparate || nodesStoredSeparatelyOrHaveId(node.Nodes);
 		}
 
 		public bool nodesContainRTF(TreeNodeCollection nodes)
@@ -698,6 +644,12 @@ namespace Organizer
 				return;
 			}
 			storeTreeObject();
+			if (nodesContainMultipleEntries(editableTreeView1.Nodes) && !VersionAtLeast(version, "2.3"))
+			{
+				if (MessageBox.Show("Only organizer files version 2.3 and higher support multiple entries. Only first entry will be saved. Continue?",
+					"Organizer", MessageBoxButtons.YesNoCancel) != DialogResult.Yes)
+					return;
+			}
 			if (nodesStoredSeparatelyOrHaveId(editableTreeView1.Nodes) && ! VersionAtLeast(version, "2.2"))
 			{
 				if (MessageBox.Show("Only organizer files version 2.2 and higher support text stored separately or links. All text will be saved internally and links will be mixed up. Continue?",
@@ -734,7 +686,7 @@ namespace Organizer
 		public void saveFileVersion1(string filePath)
 		{
 			if (editableTreeView1.Nodes.Count > 1)
-				MessageBox.Show("The old version only supports one root node. Only the first root node will be saved.");
+				MessageBox.Show("Version 1.0 only supports one root node. Only the first root node will be saved.");
 			sb = new StringBuilder();
 			setDebugValue("Version", "with sb");
 			//saveText = "";
@@ -760,17 +712,19 @@ namespace Organizer
 		//Save File Version 2.0
 		public void saveFileVersion2(string filePath, string version)
 		{
-			if(VersionAtLeast(version, "2.2"))
+			if(version.Equals("2.2"))
 			{
 				SaveUnsavedSeparatelyStoredNodes(editableTreeView1.Nodes);
 			}
-			setDebugValue("Buf stream", "true");
+			//setDebugValue("Buf stream", "true");
 			//using (BufferedStream stream = new BufferedStream(File.Open(currentFilePath, FileMode.Create)))
 			//{
 			using (BinaryWriter writer = new BinaryWriter(File.Open(filePath, FileMode.Create)))
 				//using (BinaryWriter writer = new BinaryWriter(stream))
 				{
-					if (version.Equals("2.2"))
+					if (version.Equals("2.3"))
+						writeNodes2dot3(writer);
+					else if (version.Equals("2.2"))
 						writeNodes2dot2(writer);
 					else if (version.Equals("2.1"))
 						writeNodes2dot1(writer);
@@ -865,6 +819,34 @@ namespace Organizer
 			writeNodes2dot2(writer, node.Nodes);
 		}
 
+		// Version 2.3
+		public void writeNodes2dot3(BinaryWriter writer)
+		{
+			writer.Write(-3); //version distinguisher (positive numbers apply to version 1.0)
+			writeNodes2dot3(writer, editableTreeView1.Nodes);
+			writeEntries2dot3(writer, Entry.masterList);
+			writer.Write(editableTreeView1.getIndexOfNode(editableTreeView1.SelectedNode));
+		}
+
+		public void writeNodes2dot3(BinaryWriter writer, TreeNodeCollection nodes)
+		{
+			foreach (TreeNode node in nodes)
+			{
+				writeNode2dot3(writer, node);
+			}
+		}
+
+		enum Flags2dot3 { EndOfFile, Node, Entry };
+
+		public void writeEntries2dot3(BinaryWriter writer, List<Entry> entries)
+		{
+			foreach (Entry entry in entries)
+			{
+				writeEntry2dot3(writer, entry);
+			}
+		}
+
+
 		public TreeNode openFileVersion2(string filePath)
 		{
 			using (BinaryReader reader = new BinaryReader(File.Open(filePath, FileMode.Open)))
@@ -914,9 +896,15 @@ namespace Organizer
 				setDebugValue("currentFileVersion", currentFileVersion);
 				readNodes(reader, nodes);
 			}
+			else if (n == -3) //text is saved as rtf in version 2.2
+			{
+				currentFileVersion = "2.3";
+				setDebugValue("currentFileVersion", currentFileVersion);
+				read2dot3(reader);
+			}
 			else
 			{
-				MessageBox.Show("Please download a newer application. This old version cannot open files newer than version 2.2");
+				MessageBox.Show("Please download a newer application. This version cannot open files newer than version 2.3");
 				return false;
 			}
 			return true;
@@ -945,6 +933,89 @@ namespace Organizer
 			}
 			readNodes(reader, node.Nodes);
 			return node;
+		}
+
+		public void read2dot3(BinaryReader reader)
+		{
+			while(true)
+			{
+				switch((Flags2dot3)reader.ReadChar())
+				{
+					case Flags2dot3.Node:
+						readNode2dot3(reader);
+						break;
+					case Flags2dot3.Entry:
+						readEntry2dot3(reader);
+						break;
+					case Flags2dot3.EndOfFile:
+						return;
+						break;
+					default:
+						throw new Exception("Not a valid flag");
+						break;
+				}
+			}
+		}
+
+		public void writeEntry2dot3(BinaryWriter writer, Entry entry)
+		{
+			writer.Write((char)Flags2dot3.Entry);
+			writer.Write(entry.Id);
+			writer.Write(entry.EntryText);
+			writer.Write(entry.relatedObjects.Count);
+			foreach (TreeObject treeObject in entry.relatedObjects)
+			{
+				writer.Write(treeObject.Id);
+			}
+			entry.saved = true;
+		}
+
+		public void writeNode2dot3(BinaryWriter writer, TreeNode node)
+		{
+			writer.Write((char)Flags2dot3.Node);
+			writer.Write(GetTreeObject(node).Id);
+			writer.Write(node.Text);
+			if (node.Parent != null)
+				writer.Write(GetTreeObject(treeObject.Node.Parent).Id);
+			else
+				writer.Write((int)0);
+			writeNodes2dot3(writer, node.Nodes);
+			treeObject.Saved = true;
+		}
+
+		public void readNode2dot3(BinaryReader reader)
+		{
+			int treeObjectId = reader.ReadInt32();
+			TreeNode treeNode = editableTreeView1.findChildById(treeObjectId);
+			if (treeNode == null)
+			{
+				treeNode = new TreeNode();
+				treeNode.Tag = new TreeObject(treeObjectId);
+			}
+			treeNode.Text = reader.ReadString();
+			int parentId = reader.ReadInt32();
+			if (treeNode.Parent != null)
+				treeNode.Remove();
+			if (parentId == 0)
+				editableTreeView1.Nodes.Add(treeNode);
+			else
+				editableTreeView1.findChildById(parentId).Nodes.Add(treeNode);
+			GetTreeObject(treeNode).Saved = true;
+		}
+
+		public void readEntry2dot3(BinaryReader reader)
+		{
+			int entryId = reader.ReadInt32();
+			Entry entry = Entry.FindOrCreateById(entryId);
+			entry.EntryText = reader.ReadString();
+			int count = reader.ReadInt32();
+			entry.relatedObjects = new List<TreeObject>();
+			for(int i = 0; i < count; i++)
+			{
+				int treeObjectId = reader.ReadInt32();
+				entry.relatedObjects.Add(GetTreeObject(editableTreeView1.findChildById(treeObjectId)));
+			}
+			entry.saved = true;
 		}
 
 		private void saveToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1116,8 +1187,8 @@ namespace Organizer
 
 		private void saveAs()
 		{
-			saveFileDialog1.Filter = "Organizer v1.0 (*.txt)|*.txt|Organizer v2.0 (*.hrc)|*.hrc|Organizer v2.1 (*.hrc)|*.hrc|Organizer v2.2 (*.hrc)|*.hrc|All files (*.*)|*.*";
-			saveFileDialog1.FilterIndex = 4;
+			saveFileDialog1.Filter = "Organizer v1.0 (*.txt)|*.txt|Organizer v2.0 (*.hrc)|*.hrc|Organizer v2.1 (*.hrc)|*.hrc|Organizer v2.2 (*.hrc)|*.hrc|Organizer v2.3 (*.hrc)|*.hrc|All files (*.*)|*.*";
+			saveFileDialog1.FilterIndex = 5;
 			saveFileDialog1.InitialDirectory = @"E:\Organizer\"; //Application.ExecutablePath;
 
 			if (saveFileDialog1.ShowDialog() == DialogResult.OK)
@@ -1336,6 +1407,11 @@ namespace Organizer
 		private void toolStripButton17_Click(object sender, EventArgs e)
 		{
 			richTextBoxEx1.SelectionUnderlineColor = RichTextBoxEx.UnderlineColor.Cyan;
+		}
+
+		private void toolStripButton10_Click(object sender, EventArgs e)
+		{
+			richTextBoxEx1.SelectionFontUnderline = false;
 		}
 
 		#endregion
@@ -1655,101 +1731,106 @@ namespace Organizer
 
 		private void toolStripButton21_Click(object sender, EventArgs e)
 		{
-			if (specialRtb.SelectionLength > 0)
-			{
-				Clipboard.SetText(specialRtb.Text, TextDataFormat.Rtf);
-			}
-			else
-			{
-				specialRtb.Text = Clipboard.GetText(TextDataFormat.Rtf);
-			}
+			richTextBoxEx1.ZoomFactor *= 1.25f;
+			//if (specialRtb.SelectionLength > 0)
+			//{
+			//    Clipboard.SetText(specialRtb.Text, TextDataFormat.Rtf);
+			//}
+			//else
+			//{
+			//    specialRtb.Text = Clipboard.GetText(TextDataFormat.Rtf);
+			//}
 		}
 
 		private void toolStripButton22_Click(object sender, EventArgs e)
 		{
-			int selStart = specialRtb.SelectionStart;
-			TextParser parser = new TextParser(specialRtb.Text);
-			parser.GoToTextPosition(richTextBoxEx1.SelectionStart, true);
-			while (parser.itemType == ItemParser.ItemType.Tag)
-			{
-				parser.RemoveTag();
-			}
-			specialRtb.Text = parser.text;
-			specialRtb.Select(selStart, 0);
+			scrollablePanel1.AddTextBox();
+
+			//int selStart = specialRtb.SelectionStart;
+			//TextParser parser = new TextParser(specialRtb.Text);
+			//parser.GoToTextPosition(richTextBoxEx1.SelectionStart, true);
+			//while (parser.itemType == ItemParser.ItemType.Tag)
+			//{
+			//    parser.RemoveTag();
+			//}
+			//specialRtb.Text = parser.text;
+			//specialRtb.Select(selStart, 0);
 		}
 
 		private void toolStripButton23_Click(object sender, EventArgs e)
 		{
-			startTimer();
+			richTextBoxEx1.ZoomFactor /= 1.25f;
 
-			Random r = new Random();
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				//getSelectionUnderlineColorAndStyle
-			}
-			return;
+			//startTimer();
 
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				richTextBoxEx1.Select(st, ln);
-				switch(fn)
-				{
-					case 0:
-						richTextBoxEx1.SelectionFontBold = bl;
-						break;
-					case 1:
-						richTextBoxEx1.SelectionFontItalic = bl;
-						break;
-					case 2:
-						richTextBoxEx1.SelectionFontUnderline = bl;
-						break;
-				}
-			}
+			//Random r = new Random();
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    //getSelectionUnderlineColorAndStyle
+			//}
+			//return;
 
-			//Selection: 2109 ms
-			//Behind scenes: 734 ms (3 times faster)
-			//Parser: 171 ms (20 times faster)
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    richTextBoxEx1.Select(st, ln);
+			//    switch(fn)
+			//    {
+			//        case 0:
+			//            richTextBoxEx1.SelectionFontBold = bl;
+			//            break;
+			//        case 1:
+			//            richTextBoxEx1.SelectionFontItalic = bl;
+			//            break;
+			//        case 2:
+			//            richTextBoxEx1.SelectionFontUnderline = bl;
+			//            break;
+			//    }
+			//}
+
+			////Selection: 2109 ms
+			////Behind scenes: 734 ms (3 times faster)
+			////Parser: 171 ms (20 times faster)
 
 
-			showTime("Selection");
-			richTextBoxEx1.SuspendDrawing();
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				richTextBoxEx1.Select(st, ln);
-				switch (fn)
-				{
-					case 0:
-						richTextBoxEx1.SelectionFontBold = bl;
-						break;
-					case 1:
-						richTextBoxEx1.SelectionFontItalic = bl;
-						break;
-					case 2:
-						richTextBoxEx1.SelectionFontUnderline = bl;
-						break;
-				}
-			}
-			richTextBoxEx1.ResumeDrawing();
-			showTime("Behind scenes");
-			string rtf = richTextBoxEx1.Rtf;
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				rtf = FontParser.SetProperty(rtf, (fn == 0) ? "b" : ((fn == 1) ? "i" : "ul"), bl);
-			}
-			richTextBoxEx1.Rtf = rtf;
-			showTime("Parser");
+			//showTime("Selection");
+			//richTextBoxEx1.SuspendDrawing();
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    richTextBoxEx1.Select(st, ln);
+			//    switch (fn)
+			//    {
+			//        case 0:
+			//            richTextBoxEx1.SelectionFontBold = bl;
+			//            break;
+			//        case 1:
+			//            richTextBoxEx1.SelectionFontItalic = bl;
+			//            break;
+			//        case 2:
+			//            richTextBoxEx1.SelectionFontUnderline = bl;
+			//            break;
+			//    }
+			//}
+			//richTextBoxEx1.ResumeDrawing();
+			//showTime("Behind scenes");
+			//string rtf = richTextBoxEx1.Rtf;
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    rtf = FontParser.SetProperty(rtf, (fn == 0) ? "b" : ((fn == 1) ? "i" : "ul"), bl);
+			//}
+			//richTextBoxEx1.Rtf = rtf;
+			//showTime("Parser");
 		}
 
 		RichTextBoxEx specialRtb;
@@ -1773,7 +1854,7 @@ namespace Organizer
 
 		private void AddControl(Control newControl)
 		{
-			SplitPanel((Panel)richTextBoxEx1.Parent).Controls.Add(newControl);
+			SplitPanel((Panel)scrollablePanel1.Parent).Controls.Add(newControl);
 			newControl.Dock = DockStyle.Fill;
 		}
 
@@ -1846,8 +1927,8 @@ namespace Organizer
 			richTextBoxEx1.AppendText(text);
 		}
 
-		Font preferredFont;
-		Color preferredFontColor;
+		public Font preferredFont;
+		public Color preferredFontColor;
 
 		#region ValidateFontSize
 
@@ -2138,6 +2219,22 @@ namespace Organizer
 			if (findDialog == null || findDialog.IsDisposed)
 				findDialog = new FindDialog();
 			findDialog.Show();
+		}
+
+		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			Application.Exit();
+		}
+
+		private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			AboutDialog aboutDialog = new AboutDialog();
+			aboutDialog.Show();
+		}
+
+		private void toolStripButton11_Click(object sender, EventArgs e)
+		{
+			int a = 0;
 		}
 	}
 }

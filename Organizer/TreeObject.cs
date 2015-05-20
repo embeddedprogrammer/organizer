@@ -9,8 +9,21 @@ namespace Organizer
 	{
 		public TreeNode Node;
 		public int SelectionStart;
+		public string Rtf
+		{
+			get
+			{
+				//return "";
+				return entries[0].EntryText;
+			}
+			set
+			{
+				entries[0].EntryText = value;
+			}
+		}
+		public List<Entry> entries = new List<Entry>(new Entry[] {new Entry()});
+
 		public string Text;
-		public string Rtf;
 		public bool StoredAsRTF;
 		public bool StoredSeparate;
 		public string SeparateFilename;
@@ -30,6 +43,11 @@ namespace Organizer
 			}
 		}
 		public static int IdCounter;
+
+		public TreeObject(int id)
+		{
+			Id = ++IdCounter;
+		}
 
 		public TreeObject(string text)
 		{

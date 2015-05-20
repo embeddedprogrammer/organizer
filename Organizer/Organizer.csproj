@@ -37,6 +37,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AboutDialog.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AboutDialog.Designer.cs">
+      <DependentUpon>AboutDialog.cs</DependentUpon>
+    </Compile>
     <Compile Include="ContainsRtfParser.cs" />
     <Compile Include="EditableTreeView.cs">
       <SubType>Component</SubType>
@@ -44,6 +50,7 @@
     <Compile Include="EditableTreeView.Designer.cs">
       <DependentUpon>EditableTreeView.cs</DependentUpon>
     </Compile>
+    <Compile Include="Entry.cs" />
     <Compile Include="FindDialog.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -63,6 +70,12 @@
     <Compile Include="RichTextBoxEx.Designer.cs">
       <DependentUpon>RichTextBoxEx.cs</DependentUpon>
     </Compile>
+    <Compile Include="ScrollablePanel.cs">
+      <SubType>Component</SubType>
+    </Compile>
+    <Compile Include="ScrollablePanel.Designer.cs">
+      <DependentUpon>ScrollablePanel.cs</DependentUpon>
+    </Compile>
     <Compile Include="TextParser.cs" />
     <Compile Include="GroupParser.cs" />
     <Compile Include="HyperlinkDialog.cs">
@@ -76,6 +89,10 @@
     <Compile Include="LinkCollection.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <EmbeddedResource Include="AboutDialog.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>AboutDialog.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="EditableTreeView.resx">
       <DependentUpon>EditableTreeView.cs</DependentUpon>
       <SubType>Designer</SubType>
@@ -100,6 +117,10 @@
     <EmbeddedResource Include="RichTextBoxEx.resx">
       <SubType>Designer</SubType>
       <DependentUpon>RichTextBoxEx.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ScrollablePanel.resx">
+      <SubType>Designer</SubType>
+      <DependentUpon>ScrollablePanel.cs</DependentUpon>
     </EmbeddedResource>
     <Compile Include="Properties\Resources.Designer.cs">
       <AutoGen>True</AutoGen>

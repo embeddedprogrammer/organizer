@@ -22,3 +22,5 @@ C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organ
 C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organizer\Organizer\bin\Debug\Organizer.exe.config
 C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organizer\Organizer\obj\Debug\Organizer.RichTextBoxEx.resources
 C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organizer\Organizer\obj\Debug\Organizer.FindDialog.resources
+C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organizer\Organizer\obj\Debug\Organizer.AboutDialog.resources
+C:\Documents and Settings\newuser\My Documents\Visual Studio 2005\Projects\Organizer\Organizer\obj\Debug\Organizer.ScrollablePanel.resources
