@@ -18,7 +18,7 @@ namespace Organizer
 			g = CreateGraphics();
 		}
 
-		Graphics g;
+		Graphics g; 
 
 		#region [TREEVIEW DRAG AND DROP FUNCTIONALITY]
 
