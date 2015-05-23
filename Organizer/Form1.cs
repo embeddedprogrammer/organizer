@@ -7,7 +7,7 @@ using System.Text;
 using System.Windows.Forms;
 using System.IO;
 
-namespace Organizer
+namespace Organizer 
 {
     public partial class Form1 : Form
     {
