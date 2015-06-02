@@ -2149,5 +2149,16 @@ namespace Organizer
 				findDialog = new FindDialog();
 			findDialog.Show();
 		}
+
+		private void exitToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			Application.Exit();
+		}
+
+		private void aboutToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			AboutDialog aboutDialog = new AboutDialog();
+			aboutDialog.Show();
+		}
 	}
 }
