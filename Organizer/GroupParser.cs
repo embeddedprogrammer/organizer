@@ -60,15 +60,35 @@ namespace Organizer
 			return (braceLevel == level && itemType == ItemType.RightBrace);
 		}
 
+		public override void RecordBrace()
+		{
+			if (itemType == ItemType.RightBrace && braceLevel == 2)
+			{
+				groupType = GroupType.None;
+				treatSemicolonAsDelimiter = false;
+			}
+			base.RecordBrace();
+		}
+
 		protected string groupHeader;
 		public override void RecordGroupHeader()
 		{
 			base.RecordGroupHeader();
 			groupHeader = GetGroupHeader();
 			if (groupHeader.Equals("colortbl"))
+			{
 				groupType = GroupType.ColorTable;
+				treatSemicolonAsDelimiter = true;
+			}
 			else if (groupHeader.Equals("fonttbl"))
+			{
 				groupType = GroupType.FontTable;
+				treatSemicolonAsDelimiter = true;
+			}
+			else
+			{
+				treatSemicolonAsDelimiter = false;
+			}
 			delimiterCounter = 0;
 		}
 

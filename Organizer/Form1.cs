@@ -110,7 +110,7 @@ namespace Organizer
 			while (recentFilePaths.Count > recentFileMenuItems.Count)
 			{
 				ToolStripMenuItem recentFileMenuItem = new ToolStripMenuItem();
-				fileToolStripMenuItem.DropDownItems.Add(recentFileMenuItem);
+				fileToolStripMenuItem.DropDownItems.Insert(fileToolStripMenuItem.DropDownItems.Count - 2, recentFileMenuItem);
 				recentFileMenuItems.Add(recentFileMenuItem);
 				recentFileMenuItem.Click += new EventHandler(recentFileMenuItem_Click);
 			}
@@ -734,7 +734,7 @@ namespace Organizer
 		public void saveFileVersion1(string filePath)
 		{
 			if (editableTreeView1.Nodes.Count > 1)
-				MessageBox.Show("The old version only supports one root node. Only the first root node will be saved.");
+				MessageBox.Show("Version 1.0 only supports one root node. Only the first root node will be saved.");
 			sb = new StringBuilder();
 			setDebugValue("Version", "with sb");
 			//saveText = "";
@@ -1338,6 +1338,11 @@ namespace Organizer
 			richTextBoxEx1.SelectionUnderlineColor = RichTextBoxEx.UnderlineColor.Cyan;
 		}
 
+		private void toolStripButton10_Click(object sender, EventArgs e)
+		{
+			richTextBoxEx1.SelectionFontUnderline = false;
+		}
+
 		#endregion
 		
 		private void updateSepIcon()
@@ -1655,101 +1660,106 @@ namespace Organizer
 
 		private void toolStripButton21_Click(object sender, EventArgs e)
 		{
-			if (specialRtb.SelectionLength > 0)
-			{
-				Clipboard.SetText(specialRtb.Text, TextDataFormat.Rtf);
-			}
-			else
-			{
-				specialRtb.Text = Clipboard.GetText(TextDataFormat.Rtf);
-			}
+			richTextBoxEx1.ZoomFactor *= 1.25f;
+			//if (specialRtb.SelectionLength > 0)
+			//{
+			//    Clipboard.SetText(specialRtb.Text, TextDataFormat.Rtf);
+			//}
+			//else
+			//{
+			//    specialRtb.Text = Clipboard.GetText(TextDataFormat.Rtf);
+			//}
 		}
 
 		private void toolStripButton22_Click(object sender, EventArgs e)
 		{
-			int selStart = specialRtb.SelectionStart;
-			TextParser parser = new TextParser(specialRtb.Text);
-			parser.GoToTextPosition(richTextBoxEx1.SelectionStart, true);
-			while (parser.itemType == ItemParser.ItemType.Tag)
-			{
-				parser.RemoveTag();
-			}
-			specialRtb.Text = parser.text;
-			specialRtb.Select(selStart, 0);
+			//scrollablePanel1.AddTextBox();
+
+			//int selStart = specialRtb.SelectionStart;
+			//TextParser parser = new TextParser(specialRtb.Text);
+			//parser.GoToTextPosition(richTextBoxEx1.SelectionStart, true);
+			//while (parser.itemType == ItemParser.ItemType.Tag)
+			//{
+			//    parser.RemoveTag();
+			//}
+			//specialRtb.Text = parser.text;
+			//specialRtb.Select(selStart, 0);
 		}
 
 		private void toolStripButton23_Click(object sender, EventArgs e)
 		{
-			startTimer();
+			richTextBoxEx1.ZoomFactor /= 1.25f;
 
-			Random r = new Random();
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				//getSelectionUnderlineColorAndStyle
-			}
-			return;
+			//startTimer();
 
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				richTextBoxEx1.Select(st, ln);
-				switch(fn)
-				{
-					case 0:
-						richTextBoxEx1.SelectionFontBold = bl;
-						break;
-					case 1:
-						richTextBoxEx1.SelectionFontItalic = bl;
-						break;
-					case 2:
-						richTextBoxEx1.SelectionFontUnderline = bl;
-						break;
-				}
-			}
+			//Random r = new Random();
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    //getSelectionUnderlineColorAndStyle
+			//}
+			//return;
 
-			//Selection: 2109 ms
-			//Behind scenes: 734 ms (3 times faster)
-			//Parser: 171 ms (20 times faster)
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    richTextBoxEx1.Select(st, ln);
+			//    switch(fn)
+			//    {
+			//        case 0:
+			//            richTextBoxEx1.SelectionFontBold = bl;
+			//            break;
+			//        case 1:
+			//            richTextBoxEx1.SelectionFontItalic = bl;
+			//            break;
+			//        case 2:
+			//            richTextBoxEx1.SelectionFontUnderline = bl;
+			//            break;
+			//    }
+			//}
+
+			////Selection: 2109 ms
+			////Behind scenes: 734 ms (3 times faster)
+			////Parser: 171 ms (20 times faster)
 
 
-			showTime("Selection");
-			richTextBoxEx1.SuspendDrawing();
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				richTextBoxEx1.Select(st, ln);
-				switch (fn)
-				{
-					case 0:
-						richTextBoxEx1.SelectionFontBold = bl;
-						break;
-					case 1:
-						richTextBoxEx1.SelectionFontItalic = bl;
-						break;
-					case 2:
-						richTextBoxEx1.SelectionFontUnderline = bl;
-						break;
-				}
-			}
-			richTextBoxEx1.ResumeDrawing();
-			showTime("Behind scenes");
-			string rtf = richTextBoxEx1.Rtf;
-			for (int i = 0; i < 1000; i++) //2 ms / action
-			{
-				int st = r.Next(0, richTextBoxEx1.TextLength);
-				int ln = r.Next(1, richTextBoxEx1.TextLength - st);
-				int fn = r.Next(0, 3);
-				bool bl = (r.Next(0, 2) == 1);
-				rtf = FontParser.SetProperty(rtf, (fn == 0) ? "b" : ((fn == 1) ? "i" : "ul"), bl);
-			}
-			richTextBoxEx1.Rtf = rtf;
-			showTime("Parser");
+			//showTime("Selection");
+			//richTextBoxEx1.SuspendDrawing();
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    richTextBoxEx1.Select(st, ln);
+			//    switch (fn)
+			//    {
+			//        case 0:
+			//            richTextBoxEx1.SelectionFontBold = bl;
+			//            break;
+			//        case 1:
+			//            richTextBoxEx1.SelectionFontItalic = bl;
+			//            break;
+			//        case 2:
+			//            richTextBoxEx1.SelectionFontUnderline = bl;
+			//            break;
+			//    }
+			//}
+			//richTextBoxEx1.ResumeDrawing();
+			//showTime("Behind scenes");
+			//string rtf = richTextBoxEx1.Rtf;
+			//for (int i = 0; i < 1000; i++) //2 ms / action
+			//{
+			//    int st = r.Next(0, richTextBoxEx1.TextLength);
+			//    int ln = r.Next(1, richTextBoxEx1.TextLength - st);
+			//    int fn = r.Next(0, 3);
+			//    bool bl = (r.Next(0, 2) == 1);
+			//    rtf = FontParser.SetProperty(rtf, (fn == 0) ? "b" : ((fn == 1) ? "i" : "ul"), bl);
+			//}
+			//richTextBoxEx1.Rtf = rtf;
+			//showTime("Parser");
 		}
 
 		RichTextBoxEx specialRtb;
@@ -1846,8 +1856,8 @@ namespace Organizer
 			richTextBoxEx1.AppendText(text);
 		}
 
-		Font preferredFont;
-		Color preferredFontColor;
+		public Font preferredFont;
+		public Color preferredFontColor;
 
 		#region ValidateFontSize
 
