@@ -27,14 +27,17 @@ namespace Organizer
 				richTextBoxEx1.AutoWordSelection = false;
 			}));
 
-			preferredFont = richTextBoxEx1.Font;
-			preferredFontColor = richTextBoxEx1.ForeColor;
+			toolStripComboBox1.Text = Organizer.Properties.Settings.Default.DefaultFontName;
+			toolStripComboBox2.Text = "" + Organizer.Properties.Settings.Default.DefaultFontSize;
 			
             richTextBoxEx1.AllowDrop = true;
             editableTreeView1.AllowDrop = true;
             richTextBoxEx1.DragEnter += new DragEventHandler(richTextBoxEx1_DragEnter);
             richTextBoxEx1.DragDrop += new DragEventHandler(richTextBoxEx1_DragDrop);
 			richTextBoxEx1.DragOver += new DragEventHandler(richTextBoxEx1_DragOver);
+
+			string[] paths = Organizer.Properties.Settings.Default.RecentFiles.Split(',');
+			recentFilePaths = new List<string>(paths);
 
 			editableTreeView1.AfterAddNode += new EditableTreeView.AfterAddNodeDelegate(editableTreeView1_AfterAddNode);
 			
@@ -52,15 +55,7 @@ namespace Organizer
 
 			String[] args = Environment.GetCommandLineArgs();
 			//setDebugValue("CmdArgsz", printArray(args));
-			if (args.Length > 1) //first argument is the excecutable path
-			{
-				if (!openFile(args[1]))
-					newFile();
-			}
-			else
-			{
-				newFile();
-			}
+
 			//setDebugValue("Recent Files", Organizer.Properties.Settings.Default.RecentFiles);
 
 
@@ -74,8 +69,6 @@ namespace Organizer
 
 			//Properties.Settings.Default["SomeProperty"] = "Some Value";
 			//Properties.Settings.Default.Save(); // Saves settings in application configuration file
-			string[] paths = Organizer.Properties.Settings.Default.RecentFiles.Split(',');
-			recentFilePaths = new List<string>(paths);
 			recentFileMenuItems = new List<ToolStripMenuItem>();
 			UpdateRecentFileDropdown();
 
@@ -85,6 +78,16 @@ namespace Organizer
 			{
 				ShowCharacterToolStrip();
 				UpdateCharacterToolStrip();
+			}
+
+			if (args.Length > 1) //first argument is the excecutable path
+			{
+				if (!openFile(args[1]))
+					newFile();
+			}
+			else
+			{
+				newFile();
 			}
 		}
 
@@ -128,6 +131,11 @@ namespace Organizer
 			openFile(recentFilePaths[recentFileMenuItems.IndexOf((ToolStripMenuItem)sender)]);
 		}
 
+		private void setAsDefaultFontToolStripMenuItem_Click(object sender, EventArgs e)
+		{
+			Organizer.Properties.Settings.Default.DefaultFontName = richTextBoxEx1.SelectionFontName;
+			Organizer.Properties.Settings.Default.DefaultFontSize = richTextBoxEx1.SelectionFontSize;
+		}
 
 		ToolStrip characterToolStrip;
 		List<string> specialEntries;
@@ -186,7 +194,6 @@ namespace Organizer
 				entries += ((entries.Length > 0) ? "," : "") + specialEntries[i];
 			}
 			Organizer.Properties.Settings.Default.SpecialEntries = entries;
-			Properties.Settings.Default.Save();
 		}
 
 		ToolStripButton rightClickCharacterButton;
@@ -214,6 +221,11 @@ namespace Organizer
 				characterToolStrip.Items.Remove(rightClickCharacterButton);
 				UpdateCharacterToolStrip();
 			}
+		}
+
+		private Font getDefaultFont()
+		{
+			return new Font(getFont(Organizer.Properties.Settings.Default.DefaultFontName), Organizer.Properties.Settings.Default.DefaultFontSize);
 		}
 
 		private FontFamily getFont(String fontName)
@@ -379,6 +391,8 @@ namespace Organizer
 		List<TreeNode> lastSelectedNodes;
 		TreeNode lastSelectedNode;
 
+		bool loadingTextIntoTextbox = false;
+
 		private void treeView1_AfterSelect(object sender, TreeViewEventArgs e)
 		{
 			//Save last
@@ -400,7 +414,9 @@ namespace Organizer
 			}
 
 			//Open new
+			loadingTextIntoTextbox = true;
 			loadTreeObject();
+			loadingTextIntoTextbox = false;
 
 			setDebugValue("LastSelectedNodeIndex", "" + editableTreeView1.getIndexOfNode(editableTreeView1.SelectedNode));
 			setDebugValue("ChildCount", "" + editableTreeView1.getChildCount(editableTreeView1.SelectedNode));
@@ -438,17 +454,17 @@ namespace Organizer
 
 		public void storeText(RichTextBoxEx richTextBox, TreeObject treeObject)
 		{
-			bool containsRtf = richTextBox.ContainsRtf(preferredFont, preferredFontColor);
+			bool containsRtf = richTextBox.ContainsRtf(getDefaultFont(), preferredFontColor);
 			if (containsRtf != treeObject.StoredAsRTF && ! treeObject.StoredSeparate)
 			{
-				currentFileSaved = false;
+				CurrentFileSaved = false;
 				treeObject.StoredAsRTF = containsRtf;
 			}
 			if (treeObject.StoredAsRTF)
 			{
 				if (treeObject.Rtf != richTextBox.Rtf)
 				{
-					currentFileSaved = false;
+					CurrentFileSaved = false;
 					treeObject.Saved = false;
 				}
 				treeObject.Rtf = richTextBox.Rtf;
@@ -457,7 +473,7 @@ namespace Organizer
 			{
 				if (treeObject.Text != richTextBox.Text)
 				{
-					currentFileSaved = false;
+					CurrentFileSaved = false;
 					treeObject.Saved = false;
 				}
 			}
@@ -480,7 +496,7 @@ namespace Organizer
 			{
 				richTextBox.Text = treeObject.Text;
 				richTextBox.SelectAll();
-				richTextBox.SelectionFont = preferredFont;
+				richTextBox.SelectionFont = getDefaultFont();
 				richTextBox.SelectionColor = preferredFontColor;
 			}
 			try
@@ -584,7 +600,7 @@ namespace Organizer
 						return false;
 				}
 				showTime("Total time to read file");
-				currentFileSaved = true;
+				CurrentFileSaved = true;
 				setCurrentFile(filePath, currentFileVersion);
 				AddRecentFile(filePath);
 				lastSelectedNodes = new List<TreeNode>();
@@ -690,6 +706,32 @@ namespace Organizer
 			SaveUnsavedSeparatelyStoredNodes(node.Nodes);
 		}
 
+		public int calcSizeOfNodes(TreeNodeCollection nodes, bool onlyRtf)
+		{
+			if(nodes == null)
+				return 0;
+			int size = 0;
+			foreach(TreeNode node in nodes)
+			{
+				size += calcSizeOfNode(node, onlyRtf);
+			}
+			return size;
+		}
+
+		public int calcSizeOfNode(TreeNode node, bool onlyRtf)
+		{
+			TreeObject treeObject = GetTreeObject(node);
+			if (treeObject == null)
+				return 0;
+			int size = 0;
+			if (treeObject.StoredAsRTF)
+				size += treeObject.Rtf.Length;
+			else if(!onlyRtf)
+				size += treeObject.Text.Length;
+			size += calcSizeOfNodes(node.Nodes, onlyRtf);
+			return size;
+		}
+
 		public void saveFile(string filePath, string version, bool fileSavedPreviously)
 		{
 			if (fileSavedPreviously && !File.Exists(filePath))
@@ -721,7 +763,7 @@ namespace Organizer
 			}
 			showTime("Total time to write file");
 			setCurrentFile(filePath, version);
-			currentFileSaved = true;
+			CurrentFileSaved = true;
 			AddRecentFile(filePath);
 		}
 
@@ -975,7 +1017,7 @@ namespace Organizer
 
 		private void newFile()
 		{
-			currentFileSaved = true;
+			CurrentFileSaved = false;
 			filePathChosen = false;
 			currentFileName = "Tree1";
 			currentFileVersion = "2.1";
@@ -1111,7 +1153,22 @@ namespace Organizer
 		string currentFileName = null;
 		string currentFilePath = null;
 		string currentFileVersion = null;
+
 		bool currentFileSaved;
+		private bool CurrentFileSaved
+		{
+			get
+			{
+				return currentFileSaved;
+			}
+			set
+			{
+				currentFileSaved = value;
+				toolStripButton5.Enabled = !value;
+				if(value)
+					timeSinceLastSave = 0;
+			}
+		}
 		bool filePathChosen; //True if user has chosen a filepath for the file.
 
 		private void saveAs()
@@ -1140,7 +1197,7 @@ namespace Organizer
 		//returns false if cancel operation.
 		private bool confirmCloseOrNew()
 		{
-			if (!currentFileSaved)
+			if (!CurrentFileSaved)
 			{
 				// Display a MsgBox asking the user to save changes or abort. 
 				DialogResult result = MessageBox.Show("Do you want to save changes to " + currentFileName + "?",
@@ -1167,67 +1224,67 @@ namespace Organizer
 
 		private void toolStripButton8_Click(object sender, EventArgs e)
 		{
-			TreeObject ob = GetTreeObject(editableTreeView1.SelectedNode);
-			if (!filePathChosen)
-			{
-				MessageBox.Show("File must be saved first.");
-				return;
-			}
-			if (ob.StoredSeparate)
-			{
-				string treeNodeFileLocation = GetNodeFilePath();
-				if (MessageBox.Show("Keep " + treeNodeFileLocation + "?", "Keep file", MessageBoxButtons.YesNo)
-					== DialogResult.No)
-				{
-					if (!File.Exists(treeNodeFileLocation))
-					{
-						MessageBox.Show("File not found.");
-						return;
-					}
-					else
-					{
-						File.Delete(treeNodeFileLocation);
-					}
-				}
-				ob.StoredSeparate = false;
-			}
-			else
-			{
-				if (!Directory.Exists(GetOrgDirectory()))
-				{
-					MessageBox.Show("Directory not found.");
-					return;
-				}
-				else
-				{
-					string treeNodeFileName = CreateNodeFileName();
-					string treeNodeFileLocation = CombinePath(GetNodeDirectory(), treeNodeFileName);
-					if (!Directory.Exists(GetNodeDirectory()))
-					{
-						Directory.CreateDirectory(GetNodeDirectory());
-					}
-					else if (File.Exists(treeNodeFileLocation) &&
-						MessageBox.Show(treeNodeFileLocation + " already exists. Overwrite?", "Overwrite file", MessageBoxButtons.YesNo)
-						== DialogResult.No)
-					{
-						return;
-					}
-					ob.SeparateFilename = treeNodeFileName;
-					ob.StoredSeparate = true;
-					if (!ob.StoredAsRTF)
-					{
-						ob.Rtf = richTextBoxEx1.Rtf;
-						ob.StoredAsRTF = true;
-					}
-					WriteTreeObjectRtf(ob);
-				}
-			}
-			updateSepIcon();
-			//richTextBoxEx1.DoubleAction();
-			//if (richTextBoxEx1.SelectionLength > 0)
-			//	richTextBoxEx1.SelectionColor = Color.Black;
+			//TreeObject ob = GetTreeObject(editableTreeView1.SelectedNode);
+			//if (!filePathChosen)
+			//{
+			//    MessageBox.Show("File must be saved first.");
+			//    return;
+			//}
+			//if (ob.StoredSeparate)
+			//{
+			//    string treeNodeFileLocation = GetNodeFilePath();
+			//    if (MessageBox.Show("Keep " + treeNodeFileLocation + "?", "Keep file", MessageBoxButtons.YesNo)
+			//        == DialogResult.No)
+			//    {
+			//        if (!File.Exists(treeNodeFileLocation))
+			//        {
+			//            MessageBox.Show("File not found.");
+			//            return;
+			//        }
+			//        else
+			//        {
+			//            File.Delete(treeNodeFileLocation);
+			//        }
+			//    }
+			//    ob.StoredSeparate = false;
+			//}
 			//else
-			//	richTextBoxEx1.ForeColor = Color.Blue;
+			//{
+			//    if (!Directory.Exists(GetOrgDirectory()))
+			//    {
+			//        MessageBox.Show("Directory not found.");
+			//        return;
+			//    }
+			//    else
+			//    {
+			//        string treeNodeFileName = CreateNodeFileName();
+			//        string treeNodeFileLocation = CombinePath(GetNodeDirectory(), treeNodeFileName);
+			//        if (!Directory.Exists(GetNodeDirectory()))
+			//        {
+			//            Directory.CreateDirectory(GetNodeDirectory());
+			//        }
+			//        else if (File.Exists(treeNodeFileLocation) &&
+			//            MessageBox.Show(treeNodeFileLocation + " already exists. Overwrite?", "Overwrite file", MessageBoxButtons.YesNo)
+			//            == DialogResult.No)
+			//        {
+			//            return;
+			//        }
+			//        ob.SeparateFilename = treeNodeFileName;
+			//        ob.StoredSeparate = true;
+			//        if (!ob.StoredAsRTF)
+			//        {
+			//            ob.Rtf = richTextBoxEx1.Rtf;
+			//            ob.StoredAsRTF = true;
+			//        }
+			//        WriteTreeObjectRtf(ob);
+			//    }
+			//}
+			//updateSepIcon();
+			////richTextBoxEx1.DoubleAction();
+			////if (richTextBoxEx1.SelectionLength > 0)
+			////	richTextBoxEx1.SelectionColor = Color.Black;
+			////else
+			////	richTextBoxEx1.ForeColor = Color.Blue;
 		}
 
 		public void WriteTreeObjectRtf(TreeObject ob)
@@ -1299,12 +1356,14 @@ namespace Organizer
 		{
 			if (richTextBoxEx1.SelectionLength > 0)
 			{
-				richTextBoxEx1.SelectionFont = preferredFont;
+				richTextBoxEx1.SelectionFont = getDefaultFont();
 				richTextBoxEx1.SelectionColor = preferredFontColor;
+				richTextBoxEx1.SelectionFontUnderline = false;
 			}
 			else
 			{
-				richTextBoxEx1.setFont(preferredFont, preferredFontColor);
+				richTextBoxEx1.setFont(getDefaultFont(), preferredFontColor);
+				richTextBoxEx1.FontUnderline = false; 
 			}
 		}
 
@@ -1347,9 +1406,9 @@ namespace Organizer
 		
 		private void updateSepIcon()
 		{
-			bool sep = GetTreeObject(editableTreeView1.SelectedNode).StoredSeparate;
-			toolStripButton8.Checked = sep;
-			toolStripButton8.ToolTipText = sep ? "Stored separately" : "Save separately";
+			//bool sep = GetTreeObject(editableTreeView1.SelectedNode).StoredSeparate;
+			//toolStripButton8.Checked = sep;
+			//toolStripButton8.ToolTipText = sep ? "Stored separately" : "Save separately";
 		}
 
 		private void pasteSpecialToolStripMenuItem_Click(object sender, EventArgs e)
@@ -1496,14 +1555,9 @@ namespace Organizer
 
 		private void isRTFToolStripMenuItem_Click(object sender, EventArgs e)
 		{
-			if (richTextBoxEx1.ContainsRtf(preferredFont, preferredFontColor))
+			if (richTextBoxEx1.ContainsRtf(getDefaultFont(), preferredFontColor))
 				MessageBox.Show("Contains rtf");
 		}
-
-
-
-
-
 
 		int selectedNodeStackIndex;
 		bool navigationEvent;
@@ -1556,10 +1610,22 @@ namespace Organizer
 
 		private void richTextBoxEx1_SelectionChanged(object sender, EventArgs e)
 		{
-			if(charRtb != null)
+			updateToolstripFontInfo();
+			if (charRtb != null)
 			{
 				updateCharFormatRtb();
 			}
+		}
+
+		private void updateToolstripFontInfo()
+		{
+			nestedFontEvent = true;
+			toolStripComboBox1.Text = richTextBoxEx1.SelectionFontName;
+			toolStripComboBox2.Text = "" + richTextBoxEx1.SelectionFontSize;
+			toolStripButton1.Checked = richTextBoxEx1.SelectionFontBold;
+			toolStripButton2.Checked = richTextBoxEx1.SelectionFontItalic;
+			toolStripButton3.Checked = richTextBoxEx1.SelectionFontUnderline;
+			nestedFontEvent = false;
 		}
 
 		private void UpdateNodeList()
@@ -1575,6 +1641,7 @@ namespace Organizer
 
 		private void richTextBoxEx1_TextChanged(object sender, EventArgs e)
 		{
+			updateToolstripFontInfo();
 			if (specialRtb != null && !modifyingText)
 			{
 				modifyingText = true;
@@ -1585,6 +1652,8 @@ namespace Organizer
 			{
 				refreshUndoRtb();
 			}
+			if(!loadingTextIntoTextbox)
+				toolStripButton5.Enabled = true;
 		}
 
 		private void richTextBoxEx1_KeyDown(object sender, KeyEventArgs e)
@@ -1888,8 +1957,12 @@ namespace Organizer
 			}
 		}
 
+		bool nestedFontEvent = false;
+
 		private void ValidateFontName()
 		{
+			if (nestedFontEvent)
+				return;
 			ComboBox1TextChanged = false;
 			try
 			{
@@ -1944,6 +2017,8 @@ namespace Organizer
 
 		private void ValidateFontSize()
 		{
+			if (nestedFontEvent)
+				return;
 			ComboBox2TextChanged = false;
 			try
 			{
@@ -1953,16 +2028,17 @@ namespace Organizer
 					MessageBox.Show("Invalid entry. Number must be between 1 and 1000");
 					return;
 				}
-				if (richTextBoxEx1.SelectionLength > 0)
-				{
-					richTextBoxEx1.SelectionFontSize = fontSize;
-					//richTextBoxEx1.SelectionFont = new Font(getFont(toolStripComboBox1.Text), float.Parse(toolStripComboBox2.Text));
-				}
-				else
-				{
-					preferredFont = new Font(getFont(toolStripComboBox1.Text), float.Parse(toolStripComboBox2.Text));
-					richTextBoxEx1.Font = preferredFont;
-				}
+				richTextBoxEx1.SelectionFontSize = fontSize;
+				//if (richTextBoxEx1.SelectionLength > 0)
+				//{
+				//    richTextBoxEx1.SelectionFontSize = fontSize;
+				//    //richTextBoxEx1.SelectionFont = new Font(getFont(toolStripComboBox1.Text), float.Parse(toolStripComboBox2.Text));
+				//}
+				//else
+				//{
+				//    preferredFont = new Font(getFont(toolStripComboBox1.Text), float.Parse(toolStripComboBox2.Text));
+				//    richTextBoxEx1.Font = preferredFont;
+				//}
 			}
 			catch (Exception ex)
 			{
@@ -2093,7 +2169,9 @@ namespace Organizer
 
 		public void updateSizes()
 		{
-			sizeResult = "";
+			int totalSize = calcSizeOfNodes(editableTreeView1.Nodes, false);
+			int rtfSize = calcSizeOfNodes(editableTreeView1.Nodes, true);
+			sizeResult = "Total Size: " + totalSize + " Rtf Size: " + rtfSize + "\r\n";
 			updateSizes(editableTreeView1.Nodes);
 			sizeRtb.Text = sizeResult;
 		}
@@ -2159,6 +2237,17 @@ namespace Organizer
 		{
 			AboutDialog aboutDialog = new AboutDialog();
 			aboutDialog.Show();
+		}
+
+		int timeSinceLastSave = 0;
+
+		private void timer1_Tick(object sender, EventArgs e)
+		{
+			if (!CurrentFileSaved)
+				timeSinceLastSave++;
+
+			if(timeSinceLastSave >= 30 && filePathChosen)
+				saveFile(currentFilePath, currentFileVersion, true);
 		}
 	}
 }
