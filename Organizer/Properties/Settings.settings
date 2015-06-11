@@ -11,5 +11,11 @@
     <Setting Name="ShowSpecialEntriesToolbar" Type="System.Boolean" Scope="User">
       <Value Profile="(Default)">False</Value>
     </Setting>
+    <Setting Name="DefaultFontName" Type="System.String" Scope="User">
+      <Value Profile="(Default)">Microsoft Sans Serif</Value>
+    </Setting>
+    <Setting Name="DefaultFontSize" Type="System.Single" Scope="User">
+      <Value Profile="(Default)">8.5</Value>
+    </Setting>
   </Settings>
 </SettingsFile>

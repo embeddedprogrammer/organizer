@@ -442,7 +442,8 @@ namespace Organizer
 			{
 				CHARFORMAT2_STRUCT fmt = GetNewFormatStruct();
 				fmt.dwEffects = value ? CFE_UNDERLINE : 0;
-				fmt.dwMask = CFM_UNDERLINE;
+				fmt.bAnimation = 0;
+				fmt.dwMask = CFM_UNDERLINE | CFM_ANIMATION;
 				SetSelectionCharFormat(fmt);
 				//SelectedRtf = FontParser.SetProperty(SelectedRtf, "ul", value);
 			}
