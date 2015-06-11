@@ -45,6 +45,7 @@ namespace Organizer
 			this.copyRtfTextToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.addSpecialEntryToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.findToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+			this.setAsDefaultFontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.viewToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.viewDebugWindowToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.viewToolbarToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
@@ -88,7 +89,6 @@ namespace Organizer
 			this.ContentPanel = new System.Windows.Forms.ToolStripContentPanel();
 			this.toolStripContainer2 = new System.Windows.Forms.ToolStripContainer();
 			this.splitContainer1 = new System.Windows.Forms.SplitContainer();
-			this.setAsDefaultFontToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
 			this.timer1 = new System.Windows.Forms.Timer(this.components);
 			this.editableTreeView1 = new Organizer.EditableTreeView();
 			this.richTextBoxEx1 = new Organizer.RichTextBoxEx();
@@ -227,6 +227,13 @@ namespace Organizer
 			this.findToolStripMenuItem.Size = new System.Drawing.Size(179, 22);
 			this.findToolStripMenuItem.Text = "&Find...";
 			this.findToolStripMenuItem.Click += new System.EventHandler(this.findToolStripMenuItem_Click);
+			// 
+			// setAsDefaultFontToolStripMenuItem
+			// 
+			this.setAsDefaultFontToolStripMenuItem.Name = "setAsDefaultFontToolStripMenuItem";
+			this.setAsDefaultFontToolStripMenuItem.Size = new System.Drawing.Size(179, 22);
+			this.setAsDefaultFontToolStripMenuItem.Text = "Set As Default Font";
+			this.setAsDefaultFontToolStripMenuItem.Click += new System.EventHandler(this.setAsDefaultFontToolStripMenuItem_Click);
 			// 
 			// viewToolStripMenuItem
 			// 
@@ -650,7 +657,9 @@ namespace Organizer
 			// 
 			// splitContainer1
 			// 
-			this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Bottom;
+			this.splitContainer1.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom)
+						| System.Windows.Forms.AnchorStyles.Left)
+						| System.Windows.Forms.AnchorStyles.Right)));
 			this.splitContainer1.FixedPanel = System.Windows.Forms.FixedPanel.Panel1;
 			this.splitContainer1.Location = new System.Drawing.Point(0, 0);
 			this.splitContainer1.Name = "splitContainer1";
@@ -665,13 +674,6 @@ namespace Organizer
 			this.splitContainer1.Size = new System.Drawing.Size(760, 340);
 			this.splitContainer1.SplitterDistance = 171;
 			this.splitContainer1.TabIndex = 12;
-			// 
-			// setAsDefaultFontToolStripMenuItem
-			// 
-			this.setAsDefaultFontToolStripMenuItem.Name = "setAsDefaultFontToolStripMenuItem";
-			this.setAsDefaultFontToolStripMenuItem.Size = new System.Drawing.Size(179, 22);
-			this.setAsDefaultFontToolStripMenuItem.Text = "Set As Default Font";
-			this.setAsDefaultFontToolStripMenuItem.Click += new System.EventHandler(this.setAsDefaultFontToolStripMenuItem_Click);
 			// 
 			// timer1
 			// 
