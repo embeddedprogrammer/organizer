@@ -1652,8 +1652,8 @@ namespace Organizer
 			{
 				refreshUndoRtb();
 			}
-			if(!loadingTextIntoTextbox)
-				toolStripButton5.Enabled = true;
+			if (!loadingTextIntoTextbox)
+				CurrentFileSaved = false;
 		}
 
 		private void richTextBoxEx1_KeyDown(object sender, KeyEventArgs e)
